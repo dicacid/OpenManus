@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenManus Web Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .agent-selector {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .agent-selector h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .agent-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .agent-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .agent-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .agent-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.agent {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+
+        .message.system {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            text-align: center;
+            margin: 10px auto;
+            max-width: 60%;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            background: white;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #5a6fd8;
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 10px 20px;
+            background: #e3f2fd;
+            color: #1976d2;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .status.processing {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .agent-buttons {
+                flex-direction: column;
+            }
+
+            .agent-btn {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 OpenManus Web Interface</h1>
+            <p>Choose an AI agent and start chatting!</p>
+        </div>
+
+        <div class="agent-selector">
+            <h3>Select Agent Type:</h3>
+            <div class="agent-buttons">
+                <button class="agent-btn active" data-agent="manus">
+                    🧠 OpenManus Agent
+                </button>
+                <button class="agent-btn" data-agent="mcp">
+                    🔧 MCP Agent
+                </button>
+                <button class="agent-btn" data-agent="data_analysis">
+                    📊 Data Analysis Agent
+                </button>
+            </div>
+        </div>
+
+        <div class="status" id="status">
+            Click "Start Session" to begin chatting with your selected agent
+        </div>
+
+        <div class="chat-container">
+            <div class="messages" id="messages">
+                <div class="message system">
+                    Welcome to OpenManus! Select an agent type above and click "Start Session" to begin.
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-group">
+                    <input type="text" class="message-input" id="messageInput" placeholder="Type your message here..."
+                        disabled>
+                    <button class="send-btn" id="sendBtn" onclick="startSession()" disabled>
+                        Start Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSession = null;
+        let selectedAgent = 'manus';
+        let isProcessing = false;
+        let messageCheckInterval = null;
+
+        // Agent selection
+        document.querySelectorAll('.agent-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.agent-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedAgent = btn.dataset.agent;
+
+                if (currentSession) {
+                    addMessage('system', 'Agent type changed. Please start a new session.');
+                    endSession();
+                }
+            });
+        });
+
+        // Message input handling
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function startSession() {
+            try {
+                updateStatus('Creating session...', 'processing');
+
+                const response = await fetch('/api/session/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        agent_type: selectedAgent
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create session');
+                }
+
+                currentSession = data.session_id;
+                updateStatus('Initializing agent...', 'processing');
+
+                // Wait for agent to be ready
+                await waitForAgentReady();
+
+                // Start checking for messages
+                messageCheckInterval = setInterval(checkMessages, 1000);
+
+                // Update UI
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendBtn').textContent = 'Send';
+                document.getElementById('sendBtn').onclick = sendMessage;
+
+                addMessage('system', `Connected to ${getAgentName(selectedAgent)}. You can now start chatting!`);
+                updateStatus('Ready to chat!');
+
+            } catch (error) {
+                console.error('Error starting session:', error);
+                updateStatus(`Error: ${error.message}`, 'error');
+                addMessage('error', `Failed to start session: ${error.message}`);
+            }
+        }
+
+        async function waitForAgentReady() {
+            const maxAttempts = 30; // 30 seconds timeout
+            let attempts = 0;
+
+            while (attempts < maxAttempts) {
+                try {
+                    const response = await fetch(`/api/session/${currentSession}/status`);
+                    const data = await response.json();
+
+                    if (data.agent_ready) {
+                        return;
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    attempts++;
+                } catch (error) {
+                    console.error('Error checking agent status:', error);
+                    attempts++;
+                }
+            }
+
+            throw new Error('Agent initialization timeout');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message || !currentSession || isProcessing) {
+                return;
+            }
+
+            try {
+                // Add user message to chat
+                addMessage('user', message);
+                input.value = '';
+
+                // Update UI
+                isProcessing = true;
+                updateStatus('Agent is thinking...', 'processing');
+                document.getElementById('sendBtn').disabled = true;
+
+                // Send message to agent
+                const response = await fetch(`/api/session/${currentSession}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to send message');
+                }
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addMessage('error', `Error: ${error.message}`);
+                isProcessing = false;
+                updateStatus('Ready to chat!');
+                document.getElementById('sendBtn').disabled = false;
+            }
+        }
+
+        async function checkMessages() {
+            if (!currentSession) return;
+
+            try {
+                const response = await fetch(`/api/session/${currentSession}/messages`);
+                const data = await response.json();
+
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        if (msg.type === 'response') {
+                            addMessage('agent', msg.content);
+                        }
+                    });
+                }
+
+                // Update processing status
+                if (isProcessing && !data.is_processing) {
+                    isProcessing = false;
+                    updateStatus('Ready to chat!');
+                    document.getElementById('sendBtn').disabled = false;
+                }
+
+            } catch (error) {
+                console.error('Error checking messages:', error);
+            }
+        }
+
+        function addMessage(type, content) {
+            const messagesContainer = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = content;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function updateStatus(message, type = '') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+
+            if (type === 'processing') {
+                statusDiv.innerHTML = '<span class="loading"></span>' + message;
+            }
+        }
+
+        function getAgentName(agentType) {
+            const names = {
+                'manus': 'OpenManus Agent',
+                'mcp': 'MCP Agent',
+                'data_analysis': 'Data Analysis Agent'
+            };
+            return names[agentType] || agentType;
+        }
+
+        function endSession() {
+            if (currentSession) {
+                fetch(`/api/session/${currentSession}/close`, { method: 'POST' })
+                    .catch(error => console.error('Error closing session:', error));
+            }
+
+            currentSession = null;
+            isProcessing = false;
+
+            if (messageCheckInterval) {
+                clearInterval(messageCheckInterval);
+                messageCheckInterval = null;
+            }
+
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendBtn').textContent = 'Start Session';
+            document.getElementById('sendBtn').onclick = startSession;
+            document.getElementById('sendBtn').disabled = false;
+
+            updateStatus('Session ended. Click "Start Session" to begin a new chat.');
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (currentSession) {
+                navigator.sendBeacon(`/api/session/${currentSession}/close`);
+            }
+        });
+    </script>
+</body>
+
+</html>
