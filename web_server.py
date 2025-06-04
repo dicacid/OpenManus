@@ -5,7 +5,6 @@ A simple web interface for OpenManus AI agents
 """
 
 import asyncio
-import json
 import logging
 import queue
 import threading
@@ -13,13 +12,12 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from flask import Flask, Response, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 
 from app.agent.data_analysis import DataAnalysis
 from app.agent.manus import Manus
 from app.agent.mcp import MCPAgent
-from app.config import config
 from app.logger import logger
 
 # Configure logging
