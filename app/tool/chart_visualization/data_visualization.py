@@ -139,7 +139,7 @@ Outputs:
                 )
         if len(error_list) > 0:
             return {
-                "observation": f"# Error chart generated{'\n'.join(error_list)}\n{self.success_output_template(success_list)}",
+                "observation": "# Error chart generated" + "\n".join(error_list) + "\n" + self.success_output_template(success_list),
                 "success": False,
             }
         else:
@@ -187,7 +187,7 @@ Outputs:
         )
         if len(error_list) > 0:
             return {
-                "observation": f"# Error in chart insights:{'\n'.join(error_list)}\n{success_template}",
+                "observation": "# Error in chart insights:" + "\n".join(error_list) + "\n" + success_template,
                 "success": False,
             }
         else:
