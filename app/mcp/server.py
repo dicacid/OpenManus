@@ -16,7 +16,7 @@ from mcp.server.fastmcp import FastMCP
 from app.logger import logger
 from app.tool.base import BaseTool
 from app.tool.bash import Bash
-from app.tool.browser_use_tool import BrowserUseTool
+from app.tool.browser_use_tool_mock import BrowserUseTool
 from app.tool.str_replace_editor import StrReplaceEditor
 from app.tool.terminate import Terminate
 
