@@ -8,9 +8,6 @@ from typing import Dict, List, Literal, Optional
 import boto3
 
 
-# Global variables to track the current tool use ID across function calls
-# Tmp solution
-CURRENT_TOOLUSE_ID = None
 
 
 # Class to handle OpenAI-style response formatting
@@ -56,6 +53,8 @@ class Chat:
 class ChatCompletions:
     def __init__(self, client):
         self.client = client
+        # Track the current tool use ID between message conversions
+        self.current_tooluse_id: Optional[str] = None
 
     def _convert_openai_tools_to_bedrock_format(self, tools):
         # Convert OpenAI function calling format to Bedrock tool format
@@ -111,8 +110,8 @@ class ChatCompletions:
                         ),
                     }
                     bedrock_message["content"].append({"toolUse": bedrock_tool_use})
-                    global CURRENT_TOOLUSE_ID
-                    CURRENT_TOOLUSE_ID = openai_tool_calls[0]["id"]
+                    # Store toolUseId for later tool result association
+                    self.current_tooluse_id = openai_tool_calls[0]["id"]
                 bedrock_messages.append(bedrock_message)
             elif message.get("role") == "tool":
                 bedrock_message = {
@@ -120,7 +119,7 @@ class ChatCompletions:
                     "content": [
                         {
                             "toolResult": {
-                                "toolUseId": CURRENT_TOOLUSE_ID,
+                                "toolUseId": self.current_tooluse_id,
                                 "content": [{"text": message.get("content")}],
                             }
                         }
@@ -146,10 +145,10 @@ class ChatCompletions:
             for content_item in bedrock_response["output"]["message"]["content"]:
                 if content_item.get("toolUse"):
                     bedrock_tool_use = content_item["toolUse"]
-                    global CURRENT_TOOLUSE_ID
-                    CURRENT_TOOLUSE_ID = bedrock_tool_use["toolUseId"]
+                    # Persist toolUseId for subsequent tool result handling
+                    self.current_tooluse_id = bedrock_tool_use["toolUseId"]
                     openai_tool_call = {
-                        "id": CURRENT_TOOLUSE_ID,
+                        "id": self.current_tooluse_id,
                         "type": "function",
                         "function": {
                             "name": bedrock_tool_use["name"],
@@ -276,8 +275,8 @@ class ChatCompletions:
                     bedrock_response["output"]["message"]["content"].append(
                         {"toolUse": tool_use}
                     )
-                    global CURRENT_TOOLUSE_ID
-                    CURRENT_TOOLUSE_ID = bedrock_tool_use["toolUseId"]
+                    # Remember the tool use ID to attach subsequent results
+                    self.current_tooluse_id = bedrock_tool_use["toolUseId"]
                 if event.get("contentBlockDelta", {}).get("delta", {}).get("toolUse"):
                     bedrock_response_tool_input += event["contentBlockDelta"]["delta"][
                         "toolUse"
